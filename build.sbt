@@ -1,4 +1,4 @@
-name := "spark-assignment"
+name := "flight-delay-analysis"
 version := "1.0"
 scalaVersion := "2.11.8"
 assemblyJarName in assembly := "spark-assignment.jar"
