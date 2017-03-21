@@ -1,5 +1,6 @@
 package com.cloudwick.projects.spark
 
+import java.io.File
 import java.util.Calendar
 
 import com.typesafe.config.ConfigFactory
@@ -16,8 +17,8 @@ object FlightDelayAnalysis {
 
   def main(args: Array[String]): Unit = {
     val session = SparkSession.builder()
-      //.master("spark://master.cdh.yarn.cos7:7077")
-      .master("local")
+      .master("spark://master.cdh.yarn.cos7:7077")
+      //.master("local")
       .config("spark.sql.warehouse.dir", "src/main/res/Ontime")
       .appName("Flight Delay Analysis").getOrCreate()
     val sc = session.sparkContext
@@ -33,8 +34,9 @@ object FlightDelayAnalysis {
     //val airports = sc.textFile("file:///F:/Cloudwick-Training/Spark/Datasets/Ontime/airports.csv")
     //val carriers = sc.textFile("file:///F:/Cloudwick-Training/Spark/Datasets/Ontime/carriers.csv")
     val carriers = sc.textFile("hdfs://master.cdh.yarn.cos7:8020/user/root/flight-data/Ontime/carriers.csv")
-    val city = ConfigFactory.load().getString("flights.delay.city")
-    val airport = ConfigFactory.load().getString("flights.delay.airport")
+    val config = ConfigFactory.parseFile(new File(args(0)))
+    val city = config.getString("flights.delay.city")
+    val airport = config.getString("flights.delay.airport")
     println(s"Entered City: $city")
     println(s"Entered airport: $airport")
     //case classes
@@ -84,7 +86,6 @@ object FlightDelayAnalysis {
     val filteredRDD = mappedRDD.filter(x => {
       (x.origin == airport || x.dest == airport) && (x.arrDelay > 0 || x.depDelay > 0)
     })
-    filteredRDD.take(20).foreach(println)
     //group by year and week
     val groupedRDD = filteredRDD.groupBy(x => (x.year, x.weekOfYear)).map(x => (x._1, x._2.groupBy(x => x.uniqueCarrier)))
     val finalRDD = groupedRDD.mapValues(x => x.map(x => (x._1, {
@@ -94,7 +95,7 @@ object FlightDelayAnalysis {
           delay += x.depDelay
         if (x.depDelay > 0) delay += x.depDelay
       })
-      delay
+      delay/60
     }))).sortBy(x => x._1).map(x => (x._1._1, x._1._2, x._2.mkString(","))).coalesce(1,true).saveAsTextFile("hdfs://master.cdh.yarn.cos7:8020/user/root/data/output/")
   }
 

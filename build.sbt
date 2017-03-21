@@ -1,7 +1,7 @@
 name := "flight-delay-analysis"
 version := "1.0"
 scalaVersion := "2.11.8"
-assemblyJarName in assembly := "spark-assignment.jar"
+assemblyJarName in assembly := "flight-delay-analysis.jar"
 autoScalaLibrary := false
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
 exportJars := true
